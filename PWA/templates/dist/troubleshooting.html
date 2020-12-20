@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>Dashboard Fire Prevention</title>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link href="/static/css/styles.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap4.min.css" rel="stylesheet" crossorigin="anonymous" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/js/all.min.js" crossorigin="anonymous"></script>
+</head>
+
+<body class="sb-nav-fixed">
+
+
+    <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
+        <a class="navbar-brand" href="index.html">Forest Fires</a>
+        <button class="btn btn-link btn-sm order-1 order-lg-0" id="sidebarToggle" href="#"><i class="fas fa-bars"></i></button>
+        <!-- Navbar Search-->
+    </nav>
+    <!-- Navbar-->
+
+    <div id="layoutSidenav">
+        <div id="layoutSidenav_nav">
+            <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
+                <div class="sb-sidenav-menu">
+                    <div class="nav">
+                        <div class="sb-sidenav-menu-heading">Start</div>
+                        <a class="nav-link" href="index.html">
+                            <div class="sb-nav-link-icon"><i class="fas fa-home"></i></div>
+                            Fire Prevention System
+                        </a>
+
+                        <div class="sb-sidenav-menu-heading">Functionalities</div>
+
+                        <a class="nav-link" href="arch.html">
+                            <div class="sb-nav-link-icon"><i class="fas fa-drafting-compass"></i>
+                            </div>
+                            System Design & Architecture
+                        </a>
+                        <a class="nav-link" href="map.html">
+                            <div class="sb-nav-link-icon"><i class="fas fa-search"></i></div>
+                            Map
+                        </a>
+                        <a class="nav-link" href="detection.html">
+                            <div class="sb-nav-link-icon"><i class="fas fa-book-open"></i></div>
+                            Image Detection
+                        </a>
+                        <a class="nav-link" href="charts.html">
+                            <div class="sb-nav-link-icon"><i class="fas fa-chart-area"></i></div>
+                            Charts
+                        </a>
+                        <a class="nav-link" href="tables.html">
+                            <div class="sb-nav-link-icon"><i class="fas fa-dollar-sign"></i></div>
+                            Prices
+                        </a>
+
+                        <a class="nav-link" href="troubleshooting.html">
+                            <div class="sb-nav-link-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                            Troubleshooting
+                        </a>
+                        <a class="nav-link" href="https://github.com/Morata3/NST">
+                            <div class="sb-nav-link-icon"><i class="fas fa-code"></i></div>
+                            Source code
+                        </a>
+
+                    </div>
+                </div>
+
+            </nav>
+        </div>
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid">
+                    <h1 class="mt-4"> Fire Prevention System</h1>
+                    <ol class="breadcrumb mb-4">
+                        <li class="breadcrumb-item active">Fire Prevention System</li>
+                    </ol>
+                </div>
+                
+                <p id="comments" style="text-align: left;width:96%;font-style:normal;background-color:white;font-weight:300;font-family:'Montserrat',Helvetica,Arial,Lucida,sans-serif;padding:2%;font-size:160%;color:#504c44;overflow:hidden;">
+                   <b style="font-weight:700">1º)</b>  During the creation of the Machine Learning model (using the DepthWiseSeparableConvolution layers)
+                     we found quite long training times even for quite small datasets (a few thousands of images). Ensuring the compatibility of all Tensorflow/Keras versions is also a non trivial problem.
+                </p>
+                
+                <p id="comments" style="text-align: left;width:96%;font-style:normal;background-color:white;font-weight:300;font-family:'Montserrat',Helvetica,Arial,Lucida,sans-serif;padding:2%;font-size:160%;color:#504c44;overflow:hidden;">
+                    <b style="font-weight:700">2º)</b> Deploying our service to AWS wasn't a easy task either. After looking out tons of tutorials (which never seemed to work) we found one that explained things in an understandable way. 
+                    We had to pay a little amount of money (0.61 cts) for the Route 53 hosting service in order to get things to work in a decent way. </p>
+                
+                <p id="comments" style="text-align: left;width:96%;font-style:normal;background-color:white;font-weight:300;font-family:'Montserrat',Helvetica,Arial,Lucida,sans-serif;padding:2%;font-size:160%;color:#504c44;overflow:hidden;">
+                        <b style="font-weight:700">3º)</b> Linking our free domain name (forest-fires-pwa-nst.ga) that we obtained from <a href="freenom.com "> Freenom</a> to the Route 53 hosting service gave some problems 
+                        since we had to configure the DNS and generate certificates (using the AWS Certificate Manager in DNS validation mode) so that AWS validated the domain as trustful.  </p>
+                
+                        <p id="comments" style="text-align: left;width:96%;font-style:normal;background-color:white;font-weight:300;font-family:'Montserrat',Helvetica,Arial,Lucida,sans-serif;padding:2%;font-size:160%;color:#504c44;overflow:hidden;">
+                <b style="font-weight:700">4º)</b> For local development and due to the necessary condition to use https to implement a PWA, we had to generate certificates signed by an entity that browsers trusted. To do this we use the <a href="https://github.com/FiloSottile/mkcert"> mkcert</a>  tool that generates locally trusted development certificates.
+                Once this was done, we were able to install the PWA through the service worker. Next, to be able to access the page implemented locally remotely, we had to use a tunnel at the application level, we achieved this with the <a href="https://ngrok.com/"> ngrok</a> application </p>
+                
+                <p id="comments" style="text-align: left;width:96%;font-style:normal;background-color:white;font-weight:300;font-family:'Montserrat',Helvetica,Arial,Lucida,sans-serif;padding:2%;font-size:160%;color:#504c44;overflow:hidden;">
+                    <b style="font-weight:700">5º)</b> It is <b style="font-weight:700">ABSOLUTELY</b> necessary to be careful when managing instances. You have to be sure that there are only the ones that you are using (and nothing else) because, 
+                    otherwise, you'll be charged an unexpected amount of cash. This resulted in 16$ less in our bank account &#128546 &#128545 </p>
+        
+                <p id="comments" style="text-align: left;width:96%;font-style:normal;background-color:white;font-weight:300;font-family:'Montserrat',Helvetica,Arial,Lucida,sans-serif;padding:2%;font-size:160%;color:#504c44;overflow:hidden;">
+                        <b style="font-weight:700">6º)</b> Since it is a fundamental requirement for the PWA that the web is accessible through https, we had to redirect the traffic that arrives through port 80 (HTTP) to our page through port 443 (HTTPS) which is linked to the certificate 
+                        that it provides us amazon with its certificate manager service. For this we used a load balancer that is created together with the elastic beanstalk environment, and which we had to adjust to redirect the traffic. </p>
+                <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" crossorigin="anonymous"></script>
+                <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+                <script src="/static/js/scripts.js"></script>
+                <script src="/static/js/app.js"></script>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" crossorigin="anonymous"></script>
+                <script src="/static/assets/demo/chart-area-demo.js"></script>
+                <script src="/static/assets/demo/chart-bar-demo.js"></script>
+                <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
+                <script src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js" crossorigin="anonymous"></script>
+                <script src="/static/assets/demo/datatables-demo.js"></script>
+
+</body>
+
+</html>

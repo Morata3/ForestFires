@@ -1,0 +1,20 @@
+{
+    "name": "Forest Fires",
+    "short_name": "Flask PWA",
+    "theme_color": "#CBD394",
+    "background_color": "#F1F7C6",
+    "icons": [{
+            "src": "/static/images/round_icon_512.png",
+            "type": "image/png",
+            "sizes": "512x512"
+        },
+        {
+            "src": "/static/images/square_icon.png",
+            "type": "image/png",
+            "sizes": "2048x2048"
+        }
+    ],
+    "start_url": "/",
+    "display": "standalone",
+    "orientation": "portrait"
+}

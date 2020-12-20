@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>Map - FF Admin</title>
+    <link href="/static/css/styles.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap4.min.css" rel="stylesheet" crossorigin="anonymous" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/js/all.min.js" crossorigin="anonymous"></script>
+    
+
+</head>
+
+<body class="sb-nav-fixed">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js">
+    </script>
+    <script>
+        function updateFoliumTemplate() {
+            var v = document.getElementById("map_version").innerText
+            console.log("GET request with map version " + v)
+            $.ajax({
+                url: '../folium?v='+v,
+                type: 'GET',
+                success: function(response){
+                    $("#folium_div").html(response.html)
+                    console.log("Map updated to version "+ response.version)
+                    $("#map_version").text(response.version)
+                },
+                error: function(error){
+                    console.log(error.responseText)
+                }
+                });
+        };
+        $(document).ready(function() {
+            setInterval(updateFoliumTemplate, 3950);
+        });
+    </script>
+    <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
+        <a class="navbar-brand" href="index.html">Forest Fires</a>
+        <button class="btn btn-link btn-sm order-1 order-lg-0" id="sidebarToggle" href="#"><i class="fas fa-bars"></i></button>
+        <!-- Navbar Search-->
+
+        <!-- Navbar-->
+
+    </nav>
+    <div id="layoutSidenav">
+        <div id="layoutSidenav_nav">
+            <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
+                <div class="sb-sidenav-menu">
+                    <div class="nav">
+                        <div class="sb-sidenav-menu-heading">Start</div>
+                        <a class="nav-link" href="index.html">
+                            <div class="sb-nav-link-icon"><i class="fas fa-home"></i></div>
+                            Fire Prevention System
+                        </a>
+
+                        <div class="sb-sidenav-menu-heading">Functionalities</div>
+
+                        <a class="nav-link" href="arch.html">
+                            <div class="sb-nav-link-icon"><i class="fas fa-drafting-compass"></i>
+                            </div>
+                            System Design & Architecture
+                        </a>
+                        <a class="nav-link" href="map.html">
+                            <div class="sb-nav-link-icon"><i class="fas fa-search"></i></div>
+                            Map
+                        </a>
+                        <a class="nav-link" href="detection.html">
+                            <div class="sb-nav-link-icon"><i class="fas fa-book-open"></i></div>
+                            Image Detection
+                        </a>
+                        <a class="nav-link" href="charts.html">
+                            <div class="sb-nav-link-icon"><i class="fas fa-chart-area"></i></div>
+                            Charts
+                        </a>
+                        <a class="nav-link" href="tables.html">
+                            <div class="sb-nav-link-icon"><i class="fas fa-dollar-sign"></i></div>
+                            Prices
+                        </a>
+                        <a class="nav-link" href="troubleshooting.html">
+                            <div class="sb-nav-link-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                            Troubleshooting
+                        </a>
+                        <a class="nav-link" href="https://github.com/Morata3/NST">
+                            <div class="sb-nav-link-icon"><i class="fas fa-code"></i></div>
+                            Source code
+                        </a>
+                    </div>
+                </div>
+
+            </nav>
+        </div>
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid">
+                    <h1 class="mt-4">Map</h1>
+                    <ol class="breadcrumb mb-4">
+                        <li class="breadcrumb-item"><a href="index.html">Fire Prevention System
+                            </a></li>
+                        <li class="breadcrumb-item active">Map</li>
+                    </ol>
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            The map represents temperature values measured by 19 sensors in a selected area of Parque Natural de Montesinho.                        </div>
+                    </div>
+
+
+                    <div style="width:900px; height:400px" class="map" id="folium_div">
+                        {% include '/dist/folium_map.html' %}
+
+                    </div>
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <p id="comments" style="width:96%;font-style:normal;height:150%;background-color:white;font-weight:400;font-family:'Montserrat',Helvetica,Arial,Lucida,sans-serif;padding:2%;font-size:130%;color:#504c44;overflow:hidden;">
+                                <br>In our proyect, a raspberry periodically sends the data collected from the sensors through MQTT. In order to represent this data we created an interactive map using the Folium library.</br>
+                                <br><b>MQTT</b>
+                                <br>A public AWS broker is used to publish and subscribe to the /firedetection topics. While the publisher is executed in the raspberry, the subscriber is listening in our flask web. Each time the suscriber receives a message, a script is called updating the html of our Folium map. </br>
+                                <br>Since this application requires to be secure, we use SSL/TLS with the certificates that AWS provides for its IoT devices. This can be archieved with the "IoT core" section of AWS.</br>
+                                <br><b>AJAX</b>
+                                <br>We wanted our live map to be smooth and constant. In other words, to update it dinamically without having to reload the web page. Therefore, we couldn't use jinja: the default flask templating language.</br>
+                                <br>AJAX allows a Web page to only reload those portions of the web which have changed, which is exactly what we needed. Every X seconds, the web-client sends an asynchronous "GET /folium" request to the server using an ajax function. On succes, the map is updated. We also gain improved application performance and responsiveness by using asynchronous programming.</br>
+                                <br>To avoid sending the whole html each time a request is made, we also included a Version Control. Each client knows which version of the map it has, and includes this information in the request. The server can only reply with the new map if there is a newer version available. This way, we consume less bandwidth and the map isn't reloaded unnecesarily.</br>
+                            </p>    
+                        </div>
+                    </div>
+
+                    <div hidden id="map_version">0</div>
+
+                    <br></br>
+
+                </div>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+        <script src="/static/js/scripts.js"></script>
+        <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js" crossorigin="anonymous"></script>
+        <script src="assets/demo/datatables-demo.js"></script>
+</body>
+
+</html>

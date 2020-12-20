@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<!-- saved from url=(0075)https://developers.google.com/web/ilt/pwa/caching-files-with-service-worker -->
+<html lang="en" dir="ltr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style>body {transition: opacity ease-in 0.2s; } 
+</style>
+    
+    
+ 
+
+
+
+<div id="cacheinsw"></div>
+
+<h2 id="using_the_cache_api_in_the_service_worker" data-text="Using the Cache API in the service worker">Using the Cache API in the service worker</h2>
+
+<p>The Service Worker API comes with a  <a href="https://developer.mozilla.org/en-US/docs/Web/API/Cache">Cache interface</a>, that lets you create stores of responses keyed by request. While this interface was intended for service workers it is actually exposed on the window, and can be accessed from anywhere in your scripts. The entry point is <code translate="no" dir="ltr">caches</code>.</p>
+
+<p>You are responsible for implementing how your script (service worker) handles updates to the cache. All updates to items in the cache must be explicitly requested; items will not expire and must be deleted. However, if the amount of cached data exceeds the browser's storage limit, the browser will begin evicting all data associated with an origin, one origin at a time, until the storage amount goes under the limit again. See  <a href="https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Browser_storage_limits_and_eviction_criteria">Browser storage limits and eviction criteria</a> for more information.</p>
+
+<div id="whentostore"></div>
+
+<h3 id="storing_resources" data-text="Storing resources">Storing resources</h3>
+
+<p>In this section, we outline a few common patterns for caching resources:  <em>on service worker install</em> ,  <em>on user interaction</em> , and  <em>on network response</em> . There are a few patterns we don't cover here. See the  <a href="https://developers.google.com/web/fundamentals/instant-and-offline/offline-cookbook">Offline Cookbook</a> for a more complete list.</p>
+
+<h4 id="on_install_-_caching_the_application_shell" data-text="On install - caching the application shell">On install - caching the application shell</h4>
+
+<p>We can cache the HTML, CSS, JS, and any static files that make up the application shell in the <code translate="no" dir="ltr">install</code> event of the service worker:</p>
+<p>This event listener triggers when the service worker is first installed.</p>
+<xmp>self.addEventListener('install', function(event) {
+    event.waitUntil(
+      caches.open(cacheName).then(function(cache) {
+        return cache.addAll(
+          [
+            '/css/bootstrap.css',
+            '/css/main.css',
+            '/js/bootstrap.min.js',
+            '/js/jquery.min.js',
+            '/offline.html'
+          ]
+        );
+      })
+    );
+  });</xmp>
+<aside class="note"><strong>Note:</strong><span> It is important to note that while this event is happening, any previous version of your service worker is still running and serving pages, so the things you do here must not disrupt that. For instance, this is not a good place to delete old caches, because the previous service worker may still be using them at this point.</span></aside>
+<p><a href="https://developer.mozilla.org/en-US/docs/Web/API/ExtendableEvent/waitUntil"><code translate="no" dir="ltr">event.waitUntil</code></a> extends the lifetime of the <code translate="no" dir="ltr">install</code> event until the passed promise resolves successfully. If the promise rejects, the installation is considered a failure and this service worker is abandoned (if an older version is running, it stays active).</p>
+
+<p><code translate="no" dir="ltr">cache.addAll</code> will reject if any of the resources fail to cache. This means the service worker will only install if all of the resources in <code translate="no" dir="ltr">cache.addAll</code> have been cached.</p>
+
+<h4 id="on_user_interaction" data-text="On user interaction">On user interaction</h4>
+
+<p>If the whole site can't be taken offline, you can let the user select the content they want available offline (for example, a video, article, or photo gallery).</p>
+
+<p>One method is to give the user a "Read later" or "Save for offline" button. When it's clicked, fetch what you need from the network and put it in the cache:</p>
+<xmp>document.querySelector('.cache-article').addEventListener('click', function(event) {
+    event.preventDefault();
+    var id = this.dataset.articleId;
+    caches.open('mysite-article-' + id).then(function(cache) {
+      fetch('/get-article-urls?id=' + id).then(function(response) {
+        // /get-article-urls returns a JSON-encoded array of
+        // resource URLs that a given article depends on
+        return response.json();
+      }).then(function(urls) {
+        cache.addAll(urls);
+      });
+    });
+  });</xmp>
+<p>In the above example, when the user clicks an element with the <code translate="no" dir="ltr">cache-article</code> class, we are getting the article ID, fetching the article with that ID, and adding the article to the cache.</p>
+<aside class="note"><strong>Note:</strong><span> The Cache API is available on the window object, meaning you don't need to involve the service worker to add things to the cache.</span></aside>
+<h4 id="on_network_response" data-text="On network response">On network response</h4>
+
+<p>If a request doesn't match anything in the cache, get it from the network, send it to the page and add it to the cache at the same time.</p>
+<xmp>self.addEventListener('fetch', function(event) {
+    event.respondWith(
+      caches.open('mysite-dynamic').then(function(cache) {
+        return cache.match(event.request).then(function (response) {
+          return response || fetch(event.request).then(function(response) {
+            cache.put(event.request, response.clone());
+            return response;
+          });
+        });
+      })
+    );
+  });</xmp>
+<p>This approach works best for resources that frequently update, such as a user's inbox or article contents. This is also useful for non-essential content such as avatars, but care is needed. If you do this for a range of URLs, be careful not to bloat the storage of your origin — if the user needs to reclaim disk space you don't want to be the prime candidate. Make sure you get rid of items in the cache you don't need any more.</p>
+<aside class="note"><strong>Note:</strong><span> To allow for efficient memory usage, you can only read a response/request's body once. In the code above, <code translate="no" dir="ltr">.clone()</code> is used to create a copy of the response that can be read separately. See  <a href="https://jakearchibald.com/2014/reading-responses/">What happens when you read a response?</a> for more information.</span></aside>
+<div id="servefiles"></div>
+
+<h3 id="serving_files_from_the_cache" data-text="Serving files from the cache">Serving files from the cache</h3>
+
+<p>To serve content from the cache and make your app available offline you need to intercept network requests and respond with files stored in the cache. There are several approaches to this:</p>
+
+
+
+<p>There are a few approaches we don't cover here. See Jake Archibald's  <a href="https://developers.google.com/web/fundamentals/instant-and-offline/offline-cookbook">Offline Cookbook</a> for a full list.</p>
+
+<h4 id="cache_only" data-text="Cache only">Cache only</h4>
+
+<p>You don't often need to handle this case specifically.  <a href="https://developers.google.com/web/ilt/pwa/caching-files-with-service-worker#cachefallback">Cache falling back to network</a> is more often the appropriate approach.</p>
+
+<p>This approach is good for any static assets that are part of your app's main code (part of that "version" of your app). You should have cached these in the install event, so you can depend on them being there.</p>
+<xmp>self.addEventListener('fetch', function(event) {
+    event.respondWith(caches.match(event.request));
+  });</xmp>
+<p>If a match isn't found in the cache, the response will look like a connection error.</p>
+
+<h4 id="network_only" data-text="Network only">Network only</h4>
+
+<p>This is the correct approach for things that can't be performed offline, such as analytics pings and non-GET requests. Again, you don't often need to handle this case specifically and the  <a href="https://developers.google.com/web/ilt/pwa/caching-files-with-service-worker#cachefallback">cache falling back to network</a> approach will often be more appropriate.</p>
+<xmp>self.addEventListener('fetch', function(event) {
+    event.respondWith(fetch(event.request));
+  });</xmp>
+<p>Alternatively, simply don't call <code translate="no" dir="ltr">event.respondWith</code>, which will result in default browser behaviour.</p>
+
+<div id="cachefallback"></div>
+
+<h4 id="cache_falling_back_to_the_network" data-text="Cache falling back to the network">Cache falling back to the network</h4>
+
+<p>If you're making your app offline-first, this is how you'll handle the majority of requests. Other patterns will be exceptions based on the incoming request.</p>
+<xmp>self.addEventListener('fetch', function(event) {
+    event.respondWith(
+      caches.match(event.request).then(function(response) {
+        return response || fetch(event.request);
+      })
+    );
+  });</xmp>
+<p>This gives you the "Cache only" behavior for things in the cache and the "Network only" behaviour for anything not cached (which includes all non-GET requests, as they cannot be cached).</p>
+
+<h4 id="network_falling_back_to_the_cache" data-text="Network falling back to the cache">Network falling back to the cache</h4>
+
+<p>This is a good approach for resources that update frequently, and are not part of the "version" of the site (for example, articles, avatars, social media timelines, game leader boards). Handling network requests this way means the online users get the most up-to-date content, and offline users get an older cached version.</p>
+
+<p>However, this method has flaws. If the user has an intermittent or slow connection they'll have to wait for the network to fail before they get content from the cache. This can take an extremely long time and is a frustrating user experience. See the next approach,  <a href="https://developers.google.com/web/ilt/pwa/caching-files-with-service-worker#cachethen">Cache then network</a>, for a better solution.</p>
+<xmp>self.addEventListener('fetch', function(event) {
+    event.respondWith(
+      fetch(event.request).catch(function() {
+        return caches.match(event.request);
+      })
+    );
+  });</xmp>
+<p>Here we first send the request to the network using <code translate="no" dir="ltr">fetch()</code>, and only if it fails do we look for a response in the cache.</p>
+
+<div id="cachethen"></div>
+
+<h4 id="cache_then_network" data-text="Cache then network">Cache then network</h4>
+
+<p>This is also a good approach for resources that update frequently. This approach will get content on screen as fast as possible, but still display up-to-date content once it arrives.</p>
+
+<p>This requires the page to make two requests: one to the cache, and one to the network. The idea is to show the cached data first, then update the page when/if the network data arrives.</p>
+
+<p>Here is the code in the page:</p>
+<xmp>var networkDataReceived = false;
+
+    startSpinner();
+    
+    // fetch fresh data
+    var networkUpdate = fetch('/data.json').then(function(response) {
+      return response.json();
+    }).then(function(data) {
+      networkDataReceived = true;
+      updatePage(data);
+    });
+    
+    // fetch cached data
+    caches.match('/data.json').then(function(response) {
+      if (!response) throw Error("No data");
+      return response.json();
+    }).then(function(data) {
+      // don't overwrite newer network data
+      if (!networkDataReceived) {
+        updatePage(data);
+      }
+    }).catch(function() {
+      // we didn't get cached data, the network is our last hope:
+      return networkUpdate;
+    }).catch(showErrorMessage).then(stopSpinner());</xmp>
+<p>We are sending a request to the network and the cache. The cache will most likely respond first and, if the network data has not already been received, we update the page with the data in the response. When the network responds we update the page again with the latest information.</p>
+
+<p>Here is the code in the service worker:</p>
+<xmp>self.addEventListener('fetch', function(event) {
+    event.respondWith(
+      caches.open('mysite-dynamic').then(function(cache) {
+        return fetch(event.request).then(function(response) {
+          cache.put(event.request, response.clone());
+          return response;
+        });
+      })
+    );
+  });</xmp>
+<p>This caches the network responses as they are fetched.</p>
+
+<p>Sometimes you can replace the current data when new data arrives (for example, game leaderboard), but be careful not to hide or replace something the user may be interacting with. For example, if you load a page of blog posts from the cache and then add new posts to the top of the page as they are fetched from the network, you might consider adjusting the scroll position so the user is uninterrupted. This can be a good solution if your app layout is fairly linear.</p>
+
+<div id="generic-fallback"></div>
+
+<h4 id="generic_fallback" data-text="Generic fallback">Generic fallback</h4>
+
+<p>If you fail to serve somethingself.addEventListener('fetch', function(event) {
+  event.respondWith(
+    // Try the cache
+    caches.match(event.request).then(function(response) {
+      // Fall back to network
+      return response || fetch(event.request);
+    }).catch(function() {
+      // If both fail, show a generic fallback:
+      return caches.match('/offline.html');
+      // However, in reality you'd have many different
+      // fallbacks, depending on URL & headers.
+      // Eg, a fallback silhouette image for avatars.
+    })
+  );
+}); </xmp>
+<p>The item you fallback to is likely to be an install dependency.</p>
+
+<p>You can also provide different fallbacks based on the network error:</p>
+<xmp>self.addEventListener('fetch', function(event) {
+    event.respondWith(
+      // Try the cache
+      caches.match(event.request).then(function(response) {
+        if (response) {
+          return response;
+        }
+        return fetch(event.request).then(function(response) {
+          if (response.status === 404) {
+            return caches.match('pages/404.html');
+          }
+          return response
+        });
+      }).catch(function() {
+        // If both fail, show a generic fallback:
+        return caches.match('/offline.html');
+      })
+    );
+  });</xmp>
+<p>Network response errors do not throw an error in the <code translate="no" dir="ltr">fetch</code> promise. Instead, <code translate="no" dir="ltr">fetch</code> returns the response object containing the error code of the network error. This means we handle network errors in a <code translate="no" dir="ltr">.then</code> instead of a <code translate="no" dir="ltr">.catch</code>.</p>
+
+<div id="remove"></div>
+
+<h3 id="removing_outdated_caches" data-text="Removing outdated caches">Removing outdated caches</h3>
+
+<p>Once a new service worker has installed and a previous version isn't being used, the new one activates, and you get an <code translate="no" dir="ltr">activate</code> event. Because the old version is out of the way, it's a good time to delete unused caches.</p>
+<xmp>self.addEventListener('activate', function(event) {
+    event.waitUntil(
+      caches.keys().then(function(cacheNames) {
+        return Promise.all(
+          cacheNames.filter(function(cacheName) {
+            // Return true if you want to remove this cache,
+            // but remember that caches are shared across
+            // the whole origin
+          }).map(function(cacheName) {
+            return caches.delete(cacheName);
+          })
+        );
+      })
+    );
+  });</xmp>
+<p>During activation, other events such as <code translate="no" dir="ltr">fetch</code> are put into a queue, so a long activation could potentially block page loads. Keep your activation as lean as possible, only using it for things you couldn't do while the old version was active.</p>
+
+
+
+
+

@@ -1,0 +1,11 @@
+click==7.1.2
+Flask==1.0.2
+itsdangerous==1.1.0
+Jinja2==2.11.2
+MarkupSafe==1.1.1
+Werkzeug==1.0.1
+matplotlib==3.3.2
+folium==0.11.0
+requests==2.23.0
+pyOpenSSL==20.0.0
+paho-mqtt==1.5.1
